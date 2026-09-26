@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">{{ 'Dashboard' if current_language == 'en' else 'لوحة التحكم' }}</h2>
+        <p class="text-muted mb-0">{{ 'A quick overview of system, warehouse, and item activity.' if current_language == 'en' else 'نظرة سريعة على أنشطة النظام والمخازن والأصناف.' }}</p>
+    </div>
+    <div>
+        <a href="/exchange-rates" class="btn btn-outline-secondary btn-sm">{{ 'View exchange rates' if current_language == 'en' else 'عرض أسعار العملات' }}</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="dashboard-card bg-primary text-white">
+            <div class="card-body d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="metric-value">{{ items_count }}</div>
+                    <div class="metric-title">{{ 'Items' if current_language == 'en' else 'الأصناف' }}</div>
+                </div>
+                <div class="icon-wrapper bg-white text-primary">
+                    <i class="fas fa-box"></i>
+                </div>
+            </div>
+            <div class="card-footer">{{ 'Items registered in the system' if current_language == 'en' else 'الأصناف المسجلة في النظام' }}</div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="dashboard-card bg-success text-white">
+            <div class="card-body d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="metric-value">{{ stores_count }}</div>
+                    <div class="metric-title">{{ 'Warehouses' if current_language == 'en' else 'المخازن' }}</div>
+                </div>
+                <div class="icon-wrapper bg-white text-success">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+            </div>
+            <div class="card-footer">{{ 'Warehouses in the system' if current_language == 'en' else 'عدد المخازن داخل النظام' }}</div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="dashboard-card bg-warning text-white">
+            <div class="card-body d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="metric-value">{{ users_count }}</div>
+                    <div class="metric-title">{{ 'Users' if current_language == 'en' else 'المستخدمون' }}</div>
+                </div>
+                <div class="icon-wrapper bg-white text-warning">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="card-footer">{{ 'Active users' if current_language == 'en' else 'عدد المستخدمين النشطين' }}</div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="dashboard-card bg-danger text-white">
+            <div class="card-body d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="metric-value">{{ low_stock_count }}</div>
+                    <div class="metric-title">{{ 'Low stock' if current_language == 'en' else 'البضائع المنخفضة' }}</div>
+                </div>
+                <div class="icon-wrapper bg-white text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="card-footer">{{ 'Items that need reordering' if current_language == 'en' else 'عدد الأصناف التي تحتاج إعادة طلب' }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    <div class="col-lg-6">
+        <div class="dashboard-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-1">{{ 'Warehouses with low-stock items' if current_language == 'en' else 'أعلى مخازن بالعناصر منخفضة الرصيد' }}</h5>
+                        <p class="text-muted mb-0">{{ 'Low-stock item count by warehouse.' if current_language == 'en' else 'توزيع عدد العناصر منخفضة الرصيد حسب المخزن.' }}</p>
+                    </div>
+                    <i class="fas fa-chart-pie fa-lg text-muted"></i>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ 'Warehouse' if current_language == 'en' else 'المخزن' }}</th>
+                                <th>{{ 'Low-stock items' if current_language == 'en' else 'عدد العناصر المنخفضة' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if low_stock_by_store %}
+                                {% for store in low_stock_by_store %}
+                                    <tr>
+                                        <td>{{ store.store_name }}</td>
+                                        <td>{{ store.total }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">{{ 'No low-stock items currently.' if current_language == 'en' else 'لا توجد عناصر منخفضة الرصيد حالياً' }}</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="dashboard-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-1">{{ 'Top low-stock items' if current_language == 'en' else 'أهم العناصر منخفضة الرصيد' }}</h5>
+                        <p class="text-muted mb-0">{{ 'Items that need reordering soon.' if current_language == 'en' else 'أسرع العناصر التي تحتاج إعادة طلب الآن.' }}</p>
+                    </div>
+                    <i class="fas fa-shipping-fast fa-lg text-muted"></i>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ 'Item' if current_language == 'en' else 'الصنف' }}</th>
+                                <th>{{ 'Warehouse' if current_language == 'en' else 'المخزن' }}</th>
+                                <th>{{ 'Current stock' if current_language == 'en' else 'الرصيد الحالي' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if low_stock_items %}
+                                {% for item in low_stock_items %}
+                                    <tr>
+                                        <td>{{ item.item_name_ar }}</td>
+                                        <td>{{ item.store_name }}</td>
+                                        <td>{{ item.current_stock }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">{{ 'No low-stock items currently.' if current_language == 'en' else 'لا توجد عناصر منخفضة الرصيد حالياً' }}</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
