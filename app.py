@@ -41,7 +41,12 @@ except ImportError as e:
     else:
         raise
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'static')
+)
 app.secret_key = os.environ.get('APP_SECRET_KEY') or secrets.token_hex(32)
 
 # Flask-WTF / CSRF configuration (professional defaults)
