@@ -41,7 +41,7 @@ except ImportError as e:
     else:
         raise
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = os.environ.get('APP_SECRET_KEY') or secrets.token_hex(32)
 
 # Flask-WTF / CSRF configuration (professional defaults)
@@ -82,6 +82,32 @@ def get_db_connection():
     except Exception as e:
         print(f"DB Connection Error: {e}")
         raise
+
+
+def ensure_customs_invoice_extra_columns():
+    """Ensure export invoice metadata columns exist for legacy/customs database installs."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("SHOW COLUMNS FROM customs_invoices")
+            existing = {row[0].lower() for row in cur.fetchall()}
+            missing = []
+            if 'storage_permit_no' not in existing:
+                missing.append("ADD COLUMN storage_permit_no VARCHAR(50) NULL")
+            if 'export_no' not in existing:
+                missing.append("ADD COLUMN export_no VARCHAR(50) NULL")
+            if missing:
+                cur.execute(f"ALTER TABLE customs_invoices {', '.join(missing)}")
+                conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+    except Exception as exc:
+        print(f"Customs invoice column migration warning: {exc}")
+
+
+ensure_customs_invoice_extra_columns()
 
 
 def bootstrap_database_schema(sql_file=None):
@@ -5620,6 +5646,8 @@ def create_export_invoice():
         invoice_no = request.form.get('invoice_no', '').strip()
         invoice_date = request.form.get('invoice_date') or None
         party = request.form.get('recipient', '').strip()
+        storage_permit_no = request.form.get('storage_permit_no', '').strip() or None
+        export_no = request.form.get('export_no', '').strip() or None
         notes = request.form.get('notes', '').strip() if request.form.get('notes') else None
         declaration_id = request.form.get('declaration_id') or None
 
@@ -5627,13 +5655,15 @@ def create_export_invoice():
             created_by = get_current_user_id(conn)
             # insert header (include optional declaration_id)
             cur.execute("""
-                INSERT INTO customs_invoices (invoice_no, invoice_type, invoice_date, party, notes, created_by, declaration_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO customs_invoices (invoice_no, invoice_type, invoice_date, party, storage_permit_no, export_no, notes, created_by, declaration_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 invoice_no,
                 'export_invoice',
                 invoice_date,
                 party,
+                storage_permit_no,
+                export_no,
                 notes,
                 created_by,
                 declaration_id or None
@@ -5722,9 +5752,11 @@ def edit_invoice(invoice_id):
         invoice_no = request.form.get('invoice_no', '').strip()
         invoice_date = request.form.get('invoice_date') or None
         party = request.form.get('recipient') or request.form.get('customer') or request.form.get('from_store') or request.form.get('reason') or ''
+        storage_permit_no = request.form.get('storage_permit_no', '').strip() or None
+        export_no = request.form.get('export_no', '').strip() or None
         notes = request.form.get('notes', '').strip() if request.form.get('notes') else None
         try:
-            cur.execute("UPDATE customs_invoices SET invoice_no=%s, invoice_date=%s, party=%s, notes=%s, updated_at=NOW() WHERE id=%s", (invoice_no, invoice_date, party, notes, invoice_id))
+            cur.execute("UPDATE customs_invoices SET invoice_no=%s, invoice_date=%s, party=%s, storage_permit_no=%s, export_no=%s, notes=%s, updated_at=NOW() WHERE id=%s", (invoice_no, invoice_date, party, storage_permit_no, export_no, notes, invoice_id))
 
             # delete existing items and re-insert
             cur.execute("DELETE FROM customs_invoice_items WHERE invoice_id=%s", (invoice_id,))

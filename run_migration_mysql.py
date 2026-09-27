@@ -5,6 +5,7 @@ MIGRATION_DIR = os.path.join(os.path.dirname(__file__), 'migrations')
 SQL_FILES = [
     os.path.join(MIGRATION_DIR, '006_reconcile_legacy_customs_schema.sql'),
     os.path.join(MIGRATION_DIR, '007_create_audit_logs.sql'),
+    os.path.join(MIGRATION_DIR, '009_customs_invoice_export_fields.sql'),
 ]
 
 db_config = {
